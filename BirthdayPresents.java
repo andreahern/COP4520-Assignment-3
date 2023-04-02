@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.ArrayList;
 
 public class BirthdayPresents {
-    public static final int BIRTHDAY_PRESENTS_NUM = 1000;
+    public static final int BIRTHDAY_PRESENTS_NUM = 500_000;
     public static final int SERVANTS_NUM = 4;
 
     private static ConcurrentLinkedDeque<Integer> orderedChain = new ConcurrentLinkedDeque<>();
