@@ -35,6 +35,9 @@ public class BirthdayPresents {
                         numThankYouNotes, presentsBag);
                 servants[i] = new Thread(servant);
                 servants[i].start();
+            }
+
+            for (int i = 0; i < SERVANTS_NUM; i++) {
                 servants[i].join();
             }
         } catch (InterruptedException e) {
@@ -66,22 +69,26 @@ class Servant implements Runnable {
     public void run() {
         boolean shouldWriteThankYou = false;
         int giftsToHandle = BIRTHDAY_PRESENTS_NUM / 4;
+
+        if (ID == 3) {
+            giftsToHandle = (BIRTHDAY_PRESENTS_NUM - giftsToHandle) * 3;
+        }
+
         for (int i = 0; i < giftsToHandle; i++) {
             if (shouldWriteThankYou) {
                 writeThankYou();
             } else {
                 addGiftToChain();
             }
+            shouldWriteThankYou = !shouldWriteThankYou;
         }
-
-        shouldWriteThankYou = !shouldWriteThankYou;
     }
 
     private void writeThankYou() {
         Integer present = null;
         chainLock.lock();
         try {
-            orderedChain.pollFirst();
+            present = orderedChain.pollFirst();
         } finally {
             chainLock.unlock();
         }
@@ -92,8 +99,13 @@ class Servant implements Runnable {
     }
 
     private void addGiftToChain() {
-        int present = getPresentFromBag();
         chainLock.lock();
+        Integer present = getPresentFromBag();
+
+        if (present == null) {
+            return;
+        }
+
         try {
             Integer pred = orderedChain.peekLast();
             Stack<Integer> removed = new Stack<>();
@@ -112,7 +124,7 @@ class Servant implements Runnable {
         }
     }
 
-    private int getPresentFromBag() {
-        return presentsBag.remove(0);
+    private synchronized Integer getPresentFromBag() {
+        return presentsBag.isEmpty() ? null : presentsBag.remove(0);
     }
 }
