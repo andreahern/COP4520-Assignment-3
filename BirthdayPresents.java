@@ -28,7 +28,17 @@ public class BirthdayPresents {
         }
 
         public void run() {
+            boolean writeThankYou = false;
+            int giftsToHandle = BIRTHDAY_PRESENTS_NUM / 4;
+            for (int i = 0; i < giftsToHandle; i++) {
+                if (writeThankYou) {
+                    // Write Thank You
+                } else {
+                    // Add Gift
+                }
+            }
 
+            writeThankYou = !writeThankYou; 
         }
     }
 }
