@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.ArrayList;
 
 public class BirthdayPresents {
-    public static final int BIRTHDAY_PRESENTS_NUM = 500_000;
+    public static final int BIRTHDAY_PRESENTS_NUM = 1000;
     public static final int SERVANTS_NUM = 4;
 
     private static ConcurrentLinkedDeque<Integer> orderedChain = new ConcurrentLinkedDeque<>();
@@ -67,11 +67,11 @@ class Servant implements Runnable {
     }
 
     public void run() {
-        boolean shouldWriteThankYou = false;
-        int giftsToHandle = BIRTHDAY_PRESENTS_NUM / 4;
+        boolean shouldWriteThankYou = ID % 2 == 0;
+        int giftsToHandle = BIRTHDAY_PRESENTS_NUM / SERVANTS_NUM;
 
         if (ID == 3) {
-            giftsToHandle = (BIRTHDAY_PRESENTS_NUM - giftsToHandle) * 3;
+            giftsToHandle = (BIRTHDAY_PRESENTS_NUM - giftsToHandle) * (SERVANTS_NUM -1);
         }
 
         for (int i = 0; i < giftsToHandle; i++) {
@@ -114,10 +114,10 @@ class Servant implements Runnable {
                 removed.push(pred);
                 pred = orderedChain.peekLast();
             }
-            orderedChain.add(present);
+            orderedChain.offerLast(present);
 
             while (!removed.isEmpty()) {
-                orderedChain.add(removed.pop());
+                orderedChain.offerLast(removed.pop());
             }
         } finally {
             chainLock.unlock();
