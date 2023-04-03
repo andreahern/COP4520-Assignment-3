@@ -12,8 +12,8 @@ public class TempModule {
     public static final int ANALYZE_INTERVAL = 10;
     public static final int TEMPS_RECORDED_IN_HOUR = 5;
 
-    public static final int READER_WAIT_TIME = 100;
-    public static final int ANALYZER_WAIT_TIME = 600;
+    public static final int READER_WAIT_TIME = 1_000;
+    public static final int ANALYZER_WAIT_TIME = 60_000;
 
     static ReentrantLock reader_lock = new ReentrantLock();
     static ReentrantLock analyzer_lock = new ReentrantLock();
@@ -102,16 +102,19 @@ public class TempModule {
                 }
 
                 reader_lock.lock();
+                int[][] hour_memory_copy;
+                try {
+                    hour_memory_copy = hour_memory.clone();
+                } finally {
+                    reader_lock.unlock();
+                }
+
                 analyzer_lock.lock();
 
                 try {
-                    getMaxDiffAndWindow();
+                    getMaxDiffAndWindow(hour_memory_copy);
 
-                    sort_memory();
-                    for (int i = 0; i < TEMPS_RECORDED_IN_HOUR; i++) {
-                        hour_highest_temp[i] = hour_memory[TEMP_READER_NUM - 1][MINUTE_BUFFER - 1 - i];
-                        hour_lowest_temp[i] = hour_memory[0][i];
-                    }
+                    get_high_and_low(hour_memory_copy);
 
                     System.out.println("HOURLY REPORT");
                     System.out.println("----------------------------------------------------------------------------");
@@ -121,7 +124,6 @@ public class TempModule {
                     System.out.println("Lowest Temperatures: " + Arrays.toString(hour_lowest_temp));
                     System.out.println("\n\n");
                 } finally {
-                    reader_lock.unlock();
                     analyzer_lock.unlock();
                     reportReady.set(false);
                 }
@@ -134,7 +136,7 @@ public class TempModule {
             }
         }
 
-        private void getMaxDiffAndWindow() {
+        private void getMaxDiffAndWindow(int[][] hour_memory_copy) {
             int start_index = 0;
             int end_index = 9;
 
@@ -144,7 +146,7 @@ public class TempModule {
             int current_max_diff = 0;
             while (end_index < MINUTE_BUFFER) {
                 for (int i = 0; i < TEMP_READER_NUM; i++) {
-                    int diff = Math.abs(hour_memory[i][end_index] - hour_memory[i][start_index]);
+                    int diff = Math.abs(hour_memory_copy[i][end_index] - hour_memory_copy[i][start_index]);
 
                     if (diff > current_max_diff) {
                         current_max_diff = diff;
@@ -162,7 +164,7 @@ public class TempModule {
             end_max_diff = max_end_index;
         }
 
-        private void sort_memory() {
+        private void get_high_and_low(int[][] hour_memory_copy) {
             for (int i = 0; i < TEMP_READER_NUM; i++) {
                 for (int j = 0; j < MINUTE_BUFFER; j++) {
                     for (int k = 0; k < TEMP_READER_NUM; k++) {
@@ -175,6 +177,11 @@ public class TempModule {
                         }
                     }
                 }
+            }
+
+            for (int i = 0; i < TEMPS_RECORDED_IN_HOUR; i++) {
+                hour_highest_temp[i] = hour_memory_copy[TEMP_READER_NUM - 1][MINUTE_BUFFER - 1 - i];
+                hour_lowest_temp[i] = hour_memory_copy[0][i];
             }
         }
     }
