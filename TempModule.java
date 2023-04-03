@@ -22,7 +22,9 @@ public class TempModule {
     static int[][] hour_memory = new int[TEMP_READER_NUM][MINUTE_BUFFER];
     static int[] hour_highest_temp = new int[TEMPS_RECORDED_IN_HOUR];
     static int[] hour_lowest_temp = new int[TEMPS_RECORDED_IN_HOUR];
-    static double max_diff = 0;
+    static int max_diff = 0;
+    static int start_max_diff = 0;
+    static int end_max_diff = 0;
 
     static Random rand = new Random();
 
@@ -103,19 +105,21 @@ public class TempModule {
                 analyzer_lock.lock();
 
                 try {
-                    sort_memory();
-                    for (int[] reader_memory : hour_memory) {
-                        System.out.println(Arrays.toString(reader_memory));
-                    }
+                    getMaxDiffAndWindow();
 
+                    sort_memory();
                     for (int i = 0; i < TEMPS_RECORDED_IN_HOUR; i++) {
                         hour_highest_temp[i] = hour_memory[TEMP_READER_NUM - 1][MINUTE_BUFFER - 1 - i];
                         hour_lowest_temp[i] = hour_memory[0][i];
                     }
 
+                    System.out.println("HOURLY REPORT");
+                    System.out.println("----------------------------------------------------------------------------");
+                    System.out.println("Max Diff: " + max_diff + "\tFrom Minute: " + (start_max_diff + 1)
+                            + " To Minute: " + (end_max_diff + 1));
                     System.out.println("Highest Temperatures: " + Arrays.toString(hour_highest_temp));
                     System.out.println("Lowest Temperatures: " + Arrays.toString(hour_lowest_temp));
-
+                    System.out.println("\n\n");
                 } finally {
                     reader_lock.unlock();
                     analyzer_lock.unlock();
@@ -128,6 +132,34 @@ public class TempModule {
                     e.printStackTrace();
                 }
             }
+        }
+
+        private void getMaxDiffAndWindow() {
+            int start_index = 0;
+            int end_index = 9;
+
+            int max_start_index = 0;
+            int max_end_index = 0;
+
+            int current_max_diff = 0;
+            while (end_index < MINUTE_BUFFER) {
+                for (int i = 0; i < TEMP_READER_NUM; i++) {
+                    int diff = Math.abs(hour_memory[i][end_index] - hour_memory[i][start_index]);
+
+                    if (diff > current_max_diff) {
+                        current_max_diff = diff;
+                        max_start_index = start_index;
+                        max_end_index = end_index;
+                    }
+                }
+
+                start_index++;
+                end_index++;
+            }
+
+            max_diff = current_max_diff;
+            start_max_diff = max_start_index;
+            end_max_diff = max_end_index;
         }
 
         private void sort_memory() {
